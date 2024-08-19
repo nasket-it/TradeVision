@@ -33,8 +33,10 @@ app.layout = html.Div(children=[
     dash_tvlwc.Tvlwc(
         seriesData=[candlestick_data, line_data],
         seriesTypes=['candlestick', 'line'],
+        width= '100vw',
+        height='600px'
     ),
 ])
 
-if __name__ == "__main__":
-    app.run_server(debug=True, host="0.0.0.0", port=8000)
+# if __name__ == "__main__":
+#     app.run_server(debug=True, host="0.0.0.0", port=8000)
