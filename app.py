@@ -1,42 +1,72 @@
 import dash
-from dash import html
+import aiohttp
+import asyncio
+import dash_bootstrap_components as dbc
+from dash import Dash, html, dcc, Input, Output, State
+from dash.dependencies import Input, Output
 import dash_tvlwc
+from  tinkoff_get_func import get_sandels_day
 
-candlestick_data = [
-    {'close': 97.56, 'high': 101.29, 'low': 95.07, 'open': 100, 'time': '2021-01-01'},
-    {'close': 96.06, 'high': 99.06, 'low': 95.17, 'open': 97.56, 'time': '2021-01-02'},
-    {'close': 92.06, 'high': 98.39, 'low': 90.72, 'open': 96.06, 'time': '2021-01-03'},
-    {'close': 95.74, 'high': 97.87, 'low': 89.75, 'open': 92.06, 'time': '2021-01-04'},
-    {'close': 92.44, 'high': 97.5, 'low': 88.56, 'open': 95.74, 'time': '2021-01-05'},
-    {'close': 89.31, 'high': 93.1, 'low': 85.20, 'open': 92.44, 'time': '2021-01-06'},
-    {'close': 85.10, 'high': 93.08, 'low': 82.23, 'open': 89.31, 'time': '2021-01-07'},
-    {'close': 81.87, 'high': 88.34, 'low': 77.97, 'open': 85.10, 'time': '2021-01-08'},
-    {'close': 79.55, 'high': 82.44, 'low': 76.08, 'open': 81.87, 'time': '2021-01-09'},
-    {'close': 82.74, 'high': 84.01, 'low': 78, 'open': 79.55, 'time': '2021-01-10'}
-]
-
-line_data = [
-    {'time': '2021-01-01', 'value': 100.35},
-    {'time': '2021-01-02', 'value': 97.09},
-    {'time': '2021-01-03', 'value': 95.74},
-    {'time': '2021-01-04', 'value': 98.72},
-    {'time': '2021-01-05', 'value': 100.3},
-    {'time': '2021-01-06', 'value': 95.8},
-    {'time': '2021-01-07', 'value': 91.22},
-    {'time': '2021-01-08', 'value': 94.26},
-    {'time': '2021-01-09', 'value': 94.9},
-    {'time': '2021-01-10', 'value': 94.85}
-]
-
+data1 = get_sandels_day('SBER')
 app = dash.Dash(__name__)
-app.layout = html.Div(children=[
-    dash_tvlwc.Tvlwc(
-        seriesData=[candlestick_data, line_data],
-        seriesTypes=['candlestick', 'line'],
-        width= '100vw',
-        height='600px'
+
+app.layout = html.Div( children=[
+    dcc.Input(id="input-1", type="str",style={"font-size": "1.6rem"}),
+    dbc.Button(
+    id="button-1",
+    children="Enter",
+    n_clicks=0,
+    size="lg",
+    style={"font-size": "1.6rem"},
+    color="primary",
+    className="me-md-2",
     ),
+    dbc.Button("1m", id='time-frame1m', color="blue", size="lg", style={"font-size": "1.6rem"},className="me-md-2"),
+    dbc.Button("5m", id='time-frame5m', color="blue", size="lg", style={"font-size": "1.6rem"},className="me-md-2"),
+    dbc.Button("1h", id='time-frame30m', color="blue", size="lg", style={"font-size": "1.6rem"},className="me-md-2"),
+    dbc.Button("1d", id='time-frame1h', color="blue", size="lg", style={"font-size": "1.6rem"},className="me-md-2"),
+    dash_tvlwc.Tvlwc(
+        id='chart',
+        seriesData=[data1],
+        seriesTypes=['candlestick'],
+        width= '100vw',
+        height='700px',#'400px'
+
+    )
 ])
 
+buttons = html.Div(
+    [
+        # dbc.Button("Primary", color="primary", className="me-1"),
+        # dbc.Button("Secondary", color="secondary", className="me-1"),
+        # dbc.Button("Success", color="success", className="me-1"),
+        # dbc.Button("Warning", color="warning", className="me-1"),
+        # dbc.Button("Danger", color="danger", className="me-1"),
+        dbc.Button("1m", id='time-frame1m', color="info", className="me-1"),
+        dbc.Button("5m", id='time-frame5m', color="info", className="me-1"),
+        dbc.Button("1h", id='time-frame1h', color="info", className="me-1"),
+        dbc.Button("1d", id='time-frame1d', color="info", className="me-1"),
+        # dbc.Button("Light", color="light", className="me-1"),
+        # dbc.Button("Dark", color="dark", className="me-1"),
+        # dbc.Button("Link", color="link"),
+    ]
+)
+
+
+@app.callback(
+    Output('chart', 'seriesData'),
+    Input("button-1", 'n_clicks'),
+    # Input('time-frame5m', 'n_clicks'),
+    # Input('time-frame1m', 'n_clicks'),
+    # Input('time-frame1h', 'n_clicks'),
+    # Input('time-frame1d', 'n_clicks'),
+    State("input-1", 'value'),
+    prevent_initial_call=True
+)
+def on_button_click(n_clicks, value):
+    print(value)
+    data = get_sandels_day(value)
+    return [data] if data else None
+    # return
 # if __name__ == "__main__":
 #     app.run_server(debug=True, host="0.0.0.0", port=8000)
