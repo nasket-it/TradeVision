@@ -1,4 +1,5 @@
 import math
+import pandas as pd
 from time import timezone, time
 from secrete import Token
 from pytz import timezone
@@ -35,10 +36,11 @@ from tinkoff.invest.utils import now
 TOKEN = Token.tinkov_token_slv
 acaunt_id = '2028504625'
 future_all_info ={}
+future_all_tiker ={}
 akcii_all_info = {}
 orderbooks_reltime = {}
-
-price_plus = {i : [] for i in  Info_figi.figi_tiker}
+moex_all_tikers_ifo = {}
+# price_plus = {i : [] for i in  Info_figi.figi_tiker}
 valuta_fut = {'USDRUBF': {'figi': 'FUTUSDRUBF00', 'name': 'USDRUBF Доллар - Рубль'},
                   'SiH5': {'figi': 'FUTSI0325000', 'name': 'Si-3.25 Курс доллар - рубль'},
                   'SiU4': {'figi': 'FUTSI0924000', 'name': 'Si-9.24 Курс доллар - рубль'},
@@ -287,29 +289,27 @@ async def get_last_price(figi):
 
 last_prices = {}
 akcii_moex_tiker = {}
+moex_all_tikers_info = {}
 def get_fures_instrument():
+    global moex_all_tikers_info
     with Client(TOKEN) as client:
         info =  client.instruments.futures()
         # print(info.instruments)
         for i in info.instruments:
             future_all_info[i.figi] = i
-
+            tiker_fut = str(i.name).split()[0]
+            future_all_tiker[tiker_fut] = i
+            moex_all_tikers_info[tiker_fut.upper()] = i
         info = client.instruments.shares()
         # print(info.instruments)
         for i in info.instruments:
             if 'moex' in i.exchange.lower():
                 akcii_moex_tiker[i.ticker] = i.figi
-                akcii_all_info[i.figi] = i
-
-
-            # future_all_info[i.figi] = i
-            # print(i.basic_asset)
-            # print(price_float_ti(i.basic_asset_size))
-            # print(f"")
-        # print([akcii_all_info[i].lot for i in akcii_all_info])
-        # print(len(akcii_moex_tiker))
-
+                akcii_all_info[i.ticker] = i
+                moex_all_tikers_info[i.ticker] = i
 get_fures_instrument()
+d = moex_all_tikers_info.keys()
+print(2222222222222222, d)
 # print(*[future_all_info[i].basic_asset for i in future_all_info if future_all_info[i].basic_asset in akcii_moex_tiker])
 # print(future_all_info['FUTCNY062400'].lot)
 valyuta_dict = {}
@@ -319,7 +319,6 @@ def get_valyuta_instrument():
         info =  client.instruments.currencies()
         # print(info.instruments)
         for i in info.instruments:
-            print(i.name,  i.figi)
             valyuta_dict_info[i.figi] = i
 get_valyuta_instrument()
 #
@@ -509,43 +508,39 @@ async def calculate_percentage(price_zacr, price_real):
         return 0
 
 
-def get_sandels_day(symbol, day=366):
+def get_tinkoff_chart(symbol : str, day=366):
     with Client(TOKEN) as client:
-        current_time = datetime.now(moscow_tz)
-        start_time = current_time.replace(hour=10, minute=0, second=0, microsecond=0)
-        if current_time < start_time:  # если текущее время меньше 10 утра
-            start_time -= timedelta(days=1)  # берем 10 утра предыдущего дня
-        figi = Info_figi.tiker_figi.get(symbol, False)
+        # current_time = datetime.now(moscow_tz)
+        # start_time = current_time.replace(hour=10, minute=0, second=0, microsecond=0)
+        # if current_time < start_time:  # если текущее время меньше 10 утра
+        #     start_time -= timedelta(days=1)  # берем 10 утра предыдущего дня
+        info_tiker = moex_all_tikers_info.get(symbol.upper(), False)
+        # figi = 'BBG004730N88'
+        if info_tiker:
+            figi = info_tiker.figi
+            info = client.market_data.get_candles(
+                figi=figi,
+                from_=now() - timedelta(days=1),
+                to=now(),
+                interval=CandleInterval.CANDLE_INTERVAL_15_MIN
+            )
+            data = [{'close' : price_float_ti(i.close),
+                     'high' : price_float_ti(i.high),
+                     'low' : price_float_ti(i.low),
+                     'open' : price_float_ti(i.open),
+                     'time' : int(i.time.timestamp())
+                     #'wolume' : i.volume
+            } for i in info.candles] #i.time.strftime('%Y-%m-%d %H:%M'
 
-        info = client.market_data.get_candles(
-            figi=figi,
-            from_=now() - timedelta(days=1),
-            to=now(),
-            interval=CandleInterval.CANDLE_INTERVAL_1_MIN
-        )
-        data = [{'close' : price_float_ti(i.close),
-                 'high' : price_float_ti(i.high),
-                 'low' : price_float_ti(i.low),
-                 'open' : price_float_ti(i.open),
-                 'time' : int(i.time.timestamp())
-                 #'wolume' : i.volume
-        } for i in info.candles] #i.time.strftime('%Y-%m-%d %H:%M'
-        return data if figi else False
+            return data
+        return False
 # get_sandels_day('SBER')
 
 # print(datetime.now().time())
 # @decorator_speed
 def get_all_sandels(symbol, day=366):
     with Client(TOKEN) as client:
-        all_light = []
-        all_low = []
-        list_vwap = []
-        all_volume = 0
-        all_price_volume = 0
-        # date_dey = i.candles[0].time.day
-        count = 0
         figi = valuta_fut[symbol].get('figi')
-        moscow_tz = timezone('Europe/Moscow')
         rez = {}
         for i in client.get_all_candles(
             figi=figi,
@@ -559,18 +554,7 @@ def get_all_sandels(symbol, day=366):
             evereng_price = round((hight + low + close) / 3, 4)
             rez[f"{i.time.year}.{i.time.month}.{i.time.day}.{i.time.hour}.{i.time.minute}"] = {'low' : low, 'hight' : hight, 'open' : open , 'close' : close}
         return rez
-            # if date_dey is not i.time.day:
-            #     date_dey = i.time.day
-            #     all_volume = 0
-            #     all_price_volume = 0
-            # all_volume += i.volume
-            # eeee = round(i.volume * evereng_price, 1)
-            # all_price_volume += eeee
-            # vwap = round(all_price_volume / all_volume, 4)
-            # # list_vwap.append(get_percent(vwap, hight),vwap, get_percent(vwap, low)))
-            # all_light.append(get_percent(vwap, hight))
-            # all_low.append(get_percent(vwap, low))
-            # return {'night': max(all_light), 'low': min(all_low)}
+
 def corilaciya(symbol1, symbol2):
     si_12 = get_all_sandels(symbol1)
     si_3 = get_all_sandels(symbol2)
