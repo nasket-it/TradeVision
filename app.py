@@ -39,7 +39,7 @@ app.layout = html.Div(children=[
         seriesData=[data1],
         seriesTypes=['candlestick'],
         width= 'auto',
-        height='600px',#'400px'
+        height='500px',#'400px'
     ), style={'margin-bottom' : 5, 'margin-right' : 5, 'margin-left' : 5 })
 
 ], style={
