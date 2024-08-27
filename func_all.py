@@ -1,4 +1,4 @@
-from tinkoff_get_func import get_tinkoff_chart
+from tinkoff_get_func import get_tinkoff_chart, moex_all_tikers_info
 import pandas as pd
 
 
@@ -35,3 +35,33 @@ def calculate_spread(ticker1, ticker2):
 # akc1 = pd.DataFrame(get_sandels_day("SBER"))
 # akc2 = pd.DataFrame(get_sandels_day("GAZP"))
 # calculate_spread(akc2, akc1)
+
+def spread_2_delitela(tiker_list  : list):
+    tiker1 = tiker_list[0]
+    tiker2 = tiker_list[1]
+    if tiker1 in moex_all_tikers_info.keys() and tiker2 in moex_all_tikers_info.keys():
+        chart_tiker1 = get_tinkoff_chart(tiker1)
+        chart_tiker2 = get_tinkoff_chart(tiker2)
+        spread_chart = calculate_spread(chart_tiker1, chart_tiker2)
+        placeholder_text = f"{tiker1}/{tiker2}"
+        new_prefix_url = f"{tiker1.lower()}:{tiker2.lower()}"
+        return placeholder_text, [spread_chart], new_prefix_url
+    else:
+        return False
+
+
+def spread_3_delitela(tiker_list  : list):
+    tiker1 = tiker_list[0]
+    tiker2 = tiker_list[1]
+    tiker3 = tiker_list[2]
+    if tiker1 in moex_all_tikers_info.keys() and tiker2 in moex_all_tikers_info.keys():
+        chart_tiker1 = get_tinkoff_chart(tiker1)
+        chart_tiker2 = get_tinkoff_chart(tiker2)
+        chart_tiker3 = get_tinkoff_chart(tiker3)
+        spread_chart1 = calculate_spread(chart_tiker1, chart_tiker2)
+        spread_chart2 = calculate_spread(spread_chart1, chart_tiker3)
+        placeholder_text = f"{tiker1}/{tiker2}/{tiker3}"
+        new_prefix_url = f"{tiker1.lower()}:{tiker2.lower()}:{tiker3.lower()}"
+        return placeholder_text, [spread_chart2], new_prefix_url
+    else:
+        return False

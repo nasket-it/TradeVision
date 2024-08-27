@@ -508,21 +508,25 @@ async def calculate_percentage(price_zacr, price_real):
         return 0
 
 
-def get_tinkoff_chart(symbol : str, day=366):
+def get_tinkoff_chart(symbol : str, timeframe='1min'):
     with Client(TOKEN) as client:
-        # current_time = datetime.now(moscow_tz)
-        # start_time = current_time.replace(hour=10, minute=0, second=0, microsecond=0)
-        # if current_time < start_time:  # если текущее время меньше 10 утра
-        #     start_time -= timedelta(days=1)  # берем 10 утра предыдущего дня
         info_tiker = moex_all_tikers_info.get(symbol.upper(), False)
-        # figi = 'BBG004730N88'
         if info_tiker:
+            if timeframe == '1h':
+                interval = CandleInterval.CANDLE_INTERVAL_HOUR
+                days = 7
+            elif timeframe == '1d':
+                interval = CandleInterval.CANDLE_INTERVAL_DAY
+                days = 365
+            else:
+                interval = CandleInterval.CANDLE_INTERVAL_1_MIN
+                days = 1
             figi = info_tiker.figi
             info = client.market_data.get_candles(
                 figi=figi,
-                from_=now() - timedelta(days=1),
+                from_=now() - timedelta(days=days),
                 to=now(),
-                interval=CandleInterval.CANDLE_INTERVAL_15_MIN
+                interval=interval
             )
             data = [{'close' : price_float_ti(i.close),
                      'high' : price_float_ti(i.high),
@@ -531,7 +535,6 @@ def get_tinkoff_chart(symbol : str, day=366):
                      'time' : int(i.time.timestamp())
                      #'wolume' : i.volume
             } for i in info.candles] #i.time.strftime('%Y-%m-%d %H:%M'
-
             return data
         return False
 # get_sandels_day('SBER')
