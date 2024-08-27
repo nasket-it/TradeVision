@@ -32,7 +32,7 @@ app.layout = html.Div(children=[
         html.Div(input_tiker, style={"width": "100%"}),
         html.Div(children=[button_enter, button_1m, button_1h, button_1d], style={"width": "100%"}), ],
         style={"display": "grid", "grid-template-columns": "1fr 1fr",  "gap": "13px",
-               'margin-bottom' : 5, 'margin-top' : 5 }),
+               'margin-bottom' : 20, 'margin-top' : 20 }),
 
     html.Div(dash_tvlwc.Tvlwc(
         id='chart',
